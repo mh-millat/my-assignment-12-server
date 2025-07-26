@@ -46,3 +46,18 @@ function verifyToken(req, res, next) {
         next();
     });
 }
+
+// Main App Logic
+async function run() {
+    try {
+        await client.connect();
+        const db = client.db("sportsDB");
+
+        bookingsCollection = db.collection("bookings");
+        usersCollection = db.collection("users");
+        couponsCollection = db.collection("coupons");
+        announcementsCollection = db.collection("announcements");
+        courtsCollection = db.collection("courts");
+        const membersCollection = client.db('sportsClubDB').collection('members');
+
+// GET all members
