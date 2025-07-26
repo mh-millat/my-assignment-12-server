@@ -416,3 +416,114 @@ app.get('/users', async (req, res) => {
             }
         });
 
+        app.delete('/courts/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                if (!ObjectId.isValid(id)) return res.status(400).send({ error: 'Invalid ID' });
+
+                const result = await courtsCollection.deleteOne({ _id: new ObjectId(id) });
+                if (result.deletedCount === 0) return res.status(404).send({ error: 'Court not found' });
+
+                res.send({ deletedCount: result.deletedCount });
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to delete court' });
+            }
+        });
+
+        // ======= COUPONS ROUTES =======
+
+        app.get('/coupons', async (req, res) => {
+            try {
+                const coupons = await couponsCollection.find().toArray();
+                res.send(coupons);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch coupons' });
+            }
+        });
+
+        app.post('/coupons', async (req, res) => {
+            try {
+                const result = await couponsCollection.insertOne(req.body);
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to add coupon' });
+            }
+        });
+
+        app.patch('/coupons/:id', async (req, res) => {
+            try {
+                const result = await couponsCollection.updateOne(
+                    { _id: new ObjectId(req.params.id) },
+                    { $set: req.body }
+                );
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to update coupon' });
+            }
+        });
+
+        app.delete('/coupons/:id', async (req, res) => {
+            try {
+                const result = await couponsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to delete coupon' });
+            }
+        });
+
+        // ======= ANNOUNCEMENTS ROUTES =======
+
+        app.get('/announcements', async (req, res) => {
+            try {
+                const announcements = await announcementsCollection.find().toArray();
+                res.send(announcements);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch announcements' });
+            }
+        });
+
+        app.post('/announcements', async (req, res) => {
+            try {
+                const result = await announcementsCollection.insertOne(req.body);
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to add announcement' });
+            }
+        });
+
+        app.patch('/announcements/:id', async (req, res) => {
+            try {
+                const result = await announcementsCollection.updateOne(
+                    { _id: new ObjectId(req.params.id) },
+                    { $set: req.body }
+                );
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to update announcement' });
+            }
+        });
+
+        app.delete('/announcements/:id', async (req, res) => {
+            try {
+                const result = await announcementsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to delete announcement' });
+            }
+        });
+
+        console.log("✅ MongoDB Connected & All Routes Ready!");
+
+    } catch (error) {
+        console.error("❌ Server error:", error);
+    }
+}
+run();
+
+app.get('/', (req, res) => {
+    res.send('🏀 Sports Booking Server is Running');
+});
+
+app.listen(port, () => {
+    console.log(`🚀 Server running at http://localhost:${port}`);
+});
