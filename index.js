@@ -295,3 +295,29 @@ app.get('/users', async (req, res) => {
             }
         });
 
+        app.patch('/bookings/:id/status', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const { status } = req.body;
+                if (!['pending', 'confirmed', 'rejected', 'approved'].includes(status)) {
+                    return res.status(400).send({ error: 'Invalid status value' });
+                }
+                const result = await bookingsCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { status } }
+                );
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to update status' });
+            }
+        });
+
+        app.delete('/bookings/:id', async (req, res) => {
+            try {
+                const result = await bookingsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to delete booking' });
+            }
+        });
+
