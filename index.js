@@ -321,3 +321,98 @@ app.get('/users', async (req, res) => {
             }
         });
 
+
+        app.patch('/bookings/approve/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const result = await bookingsCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { status: 'approved' } }
+                );
+
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to approve booking' });
+            }
+        });
+
+
+
+
+        // ======= USERS ROUTES =======
+
+        app.post('/users', async (req, res) => {
+            try {
+                const user = req.body;
+                const existingUser = await usersCollection.findOne({ email: user.email });
+                if (existingUser) return res.status(400).send({ message: 'User already exists' });
+
+                user.role = user.role || 'user';
+                const result = await usersCollection.insertOne(user);
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to add user' });
+            }
+        });
+
+        app.get('/users', async (req, res) => {
+            try {
+                const users = await usersCollection.find().toArray();
+                res.send(users);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch users' });
+            }
+        });
+
+
+
+        app.get('/members', async (req, res) => {
+            try {
+                const members = await usersCollection.find().toArray();
+                res.send(members);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch members' });
+            }
+        });
+
+        // ======= COURTS ROUTES =======
+
+        app.get('/courts', async (req, res) => {
+            try {
+                const courts = await courtsCollection.find().toArray();
+                res.send(courts);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch courts' });
+            }
+        });
+
+        app.post('/courts', async (req, res) => {
+            try {
+                const court = req.body;
+                if (!court.name || !court.type || court.price == null) {
+                    return res.status(400).send({ error: 'Missing required fields' });
+                }
+                const result = await courtsCollection.insertOne(court);
+                res.send({ insertedId: result.insertedId });
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to add court' });
+            }
+        });
+
+        app.patch('/courts/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                if (!ObjectId.isValid(id)) return res.status(400).send({ error: 'Invalid ID' });
+
+                const result = await courtsCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: req.body }
+                );
+                if (result.matchedCount === 0) return res.status(404).send({ error: 'Court not found' });
+
+                res.send({ modifiedCount: result.modifiedCount });
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to update court' });
+            }
+        });
+
