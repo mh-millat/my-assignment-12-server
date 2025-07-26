@@ -212,21 +212,6 @@ app.get('/users', async (req, res) => {
             }
         });
 
-        // app.get('/bookings', async (req, res) => {
-        //     try {
-        //         const { status } = req.query;
-
-        //         let query = {};
-        //         if (status) {
-        //             query.status = status;
-        //         }
-
-        //         const bookings = await bookingsCollection.find(query).toArray();
-        //         res.send(bookings);
-        //     } catch (error) {
-        //         res.status(500).send({ error: 'Failed to fetch bookings' });
-        //     }
-        // });
 
 
         app.post('/bookings', async (req, res) => {
@@ -320,7 +305,7 @@ app.get('/users', async (req, res) => {
             }
         });
 
-        // ======= COURTS ROUTES =======
+
 
         app.get('/courts', async (req, res) => {
             try {
@@ -375,7 +360,7 @@ app.get('/users', async (req, res) => {
             }
         });
 
-        // ======= COUPONS ROUTES =======
+
 
         app.get('/coupons', async (req, res) => {
             try {
@@ -416,7 +401,7 @@ app.get('/users', async (req, res) => {
             }
         });
 
-        // ======= ANNOUNCEMENTS ROUTES =======
+
 
         app.get('/announcements', async (req, res) => {
             try {
