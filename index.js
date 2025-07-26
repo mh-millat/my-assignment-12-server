@@ -12,11 +12,24 @@ if (!process.env.DB_USER || !process.env.DB_PASS || !process.env.JWT_SECRET) {
 const app = express();
 const port = process.env.PORT || 5000;
 
+// app.use(cors({
+//     origin: [
+//         'http://localhost:5173',
+//         "https://my-assignment-12-server-kappa.vercel.app"
+
+//     ],
+//     credentials: true
+// }));
+// app.use(express.json());
 app.use(cors({
-    origin: ['http://localhost:5173'],
+    origin: [
+        'http://localhost:5173',
+        'https://keen-sopapillas-ac9c97.netlify.app'
+    ],
     credentials: true
 }));
 app.use(express.json());
+
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.v23il5n.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -50,7 +63,7 @@ function verifyToken(req, res, next) {
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
         const db = client.db("sportsDB");
 
         bookingsCollection = db.collection("bookings");
@@ -262,7 +275,7 @@ async function run() {
             }
         });
 
-   // Coupons
+        // Coupons
         app.get('/coupons', async (req, res) => {
             try {
                 const coupons = await couponsCollection.find().toArray();
@@ -351,9 +364,9 @@ async function run() {
 run();
 
 app.get('/', (req, res) => {
-    res.send('🚀 Sports Booking Server is Running');
+    res.send(' Sports Booking Server is Running');
 });
 
 app.listen(port, () => {
-    console.log(`🚀 Server running at http://localhost:${port}`);
+    console.log(`Server running at http://localhost:${port}`);
 });
