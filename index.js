@@ -224,3 +224,46 @@ app.get('/users', async (req, res) => {
                 res.status(500).send({ error: 'Failed to fetch bookings' });
             }
         });
+
+
+        // app.get('/bookings/confirmed', async (req, res) => {
+        //     try {
+        //         const page = parseInt(req.query.page) || 1;
+        //         const limit = parseInt(req.query.limit) || 10;
+        //         const skip = (page - 1) * limit;
+
+        //         const query = { status: 'confirmed' };
+        //         const total = await bookingsCollection.countDocuments(query);
+        //         const bookings = await bookingsCollection.find(query).skip(skip).limit(limit).toArray();
+        //         const totalPages = Math.ceil(total / limit);
+
+        //         res.send({ bookings, totalPages });
+        //     } catch (error) {
+        //         res.status(500).send({ error: 'Failed to fetch confirmed bookings' });
+        //     }
+        // });
+
+        app.get('/bookings/confirmed', async (req, res) => {
+            try {
+                const page = parseInt(req.query.page) || 1;
+                const limit = parseInt(req.query.limit) || 10;
+                const skip = (page - 1) * limit;
+
+                // ✅ এখানে পরিবর্তনটা হল
+                const query = { status: { $in: ['confirmed', 'approved'] } };
+
+                const total = await bookingsCollection.countDocuments(query);
+                const bookings = await bookingsCollection
+                    .find(query)
+                    .skip(skip)
+                    .limit(limit)
+                    .toArray();
+
+                const totalPages = Math.ceil(total / limit);
+
+                res.send({ bookings, totalPages });
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch confirmed bookings' });
+            }
+        });
+
