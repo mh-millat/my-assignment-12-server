@@ -98,3 +98,32 @@ app.get('/members', async (req, res) => {
         // controllers/userController.js
 
 
+
+
+// PATCH: Update user role by ID
+app.patch('/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        // Optional: Validate role
+        const validRoles = ['admin', 'member', 'user'];
+        if (!validRoles.includes(role)) {
+            return res.status(400).send({ error: 'Invalid role value' });
+        }
+
+        const result = await usersCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { role } }
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(404).send({ error: 'User not found or role not changed' });
+        }
+
+        res.send({ message: `Role updated to ${role}` });
+    } catch (error) {
+        console.error('Failed to update user role:', error);
+        res.status(500).send({ error: 'Failed to update user role' });
+    }
+});
