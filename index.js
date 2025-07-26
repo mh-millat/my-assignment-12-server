@@ -127,3 +127,61 @@ app.patch('/users/:id', async (req, res) => {
         res.status(500).send({ error: 'Failed to update user role' });
     }
 });
+
+
+// GET: Get all users
+app.get('/users', async (req, res) => {
+  try {
+    const users = await usersCollection.find().toArray();
+    res.send(users);
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+    res.status(500).send({ error: 'Failed to fetch users' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       
+
+        const updateUserRole = async (req, res) => {
+            const { id } = req.params;
+            const { role } = req.body;
+
+            // Optional: Validate role
+            const validRoles = ['admin', 'member', 'user'];
+            if (!validRoles.includes(role)) {
+                return res.status(400).json({ message: 'Invalid role' });
+            }
+
+            try {
+                const updatedUser = await User.findByIdAndUpdate(
+                    id,
+                    { role },
+                    { new: true }
+                );
+
+                if (!updatedUser) {
+                    return res.status(404).json({ message: 'User not found' });
+                }
+
+                res.json({ message: `Role updated to ${role}`, user: updatedUser });
+            } catch (error) {
+                res.status(500).json({ message: 'Server error', error });
+            }
+        };
