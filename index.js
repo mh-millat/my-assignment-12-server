@@ -185,3 +185,42 @@ app.get('/users', async (req, res) => {
                 res.status(500).json({ message: 'Server error', error });
             }
         };
+
+
+        
+        module.exports = {
+            updateUserRole,
+        };
+
+
+
+
+
+
+
+
+
+
+        // ======= BOOKINGS ROUTES =======
+
+        // app.get('/bookings', async (req, res) => {
+        //     try {
+        //         const bookings = await bookingsCollection.find().toArray();
+        //         res.send(bookings);
+        //     } catch (error) {
+        //         res.status(500).send({ error: 'Failed to fetch bookings' });
+        //     }
+        // });
+
+        app.get('/bookings', async (req, res) => {
+            try {
+                const { status } = req.query;
+                let query = {};
+                if (status) query.status = status;
+
+                const bookings = await bookingsCollection.find(query).toArray();
+                res.send(bookings);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch bookings' });
+            }
+        });
