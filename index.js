@@ -4,18 +4,16 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors({
-    origin: ['http://localhost:5173'], // তোমার ফ্রন্টএন্ড URL
+    origin: ['http://localhost:5173'],
     credentials: true
 }));
 app.use(express.json());
 
-// MongoDB URI setup
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.v23il5n.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const client = new MongoClient(uri, {
     serverApi: {
@@ -47,7 +45,7 @@ function verifyToken(req, res, next) {
     });
 }
 
-// Main App Logic
+
 async function run() {
     try {
         await client.connect();
@@ -60,18 +58,15 @@ async function run() {
         courtsCollection = db.collection("courts");
         const membersCollection = client.db('sportsClubDB').collection('members');
 
-// GET all members
-app.get('/members', async (req, res) => {
-  try {
-    const members = await membersCollection.find().toArray();
-    res.send(members);
-  } catch (error) {
-    console.error('Error fetching members:', error);
-    res.status(500).send({ error: 'Failed to load members' });
-  }
-});
-
-
+        app.get('/members', async (req, res) => {
+            try {
+                const members = await membersCollection.find().toArray();
+                res.send(members);
+            } catch (error) {
+                console.error('Error fetching members:', error);
+                res.status(500).send({ error: 'Failed to load members' });
+            }
+        });
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
@@ -81,7 +76,6 @@ app.get('/members', async (req, res) => {
             const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '2h' });
             res.send({ token });
         });
-
 
         app.get('/users/role/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
@@ -93,56 +87,49 @@ app.get('/members', async (req, res) => {
             }
         });
 
+        app.patch('/users/:id', async (req, res) => {
+            try {
+                const { id } = req.params;
+                const { role } = req.body;
+
+
+                const validRoles = ['admin', 'member', 'user'];
+                if (!validRoles.includes(role)) {
+                    return res.status(400).send({ error: 'Invalid role value' });
+                }
+
+                const result = await usersCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { role } }
+                );
+
+                if (result.modifiedCount === 0) {
+                    return res.status(404).send({ error: 'User not found or role not changed' });
+                }
+
+                res.send({ message: `Role updated to ${role}` });
+            } catch (error) {
+                console.error('Failed to update user role:', error);
+                res.status(500).send({ error: 'Failed to update user role' });
+            }
+        });
 
 
 
+        app.get('/users', async (req, res) => {
+            try {
+                const users = await usersCollection.find().toArray();
+                res.send(users);
+            } catch (error) {
+                console.error('Failed to fetch users:', error);
+                res.status(500).send({ error: 'Failed to fetch users' });
+            }
+        });
 
-
-
-app.patch('/users/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { role } = req.body;
-
-
-        const validRoles = ['admin', 'member', 'user'];
-        if (!validRoles.includes(role)) {
-            return res.status(400).send({ error: 'Invalid role value' });
-        }
-
-        const result = await usersCollection.updateOne(
-            { _id: new ObjectId(id) },
-            { $set: { role } }
-        );
-
-        if (result.modifiedCount === 0) {
-            return res.status(404).send({ error: 'User not found or role not changed' });
-        }
-
-        res.send({ message: `Role updated to ${role}` });
-    } catch (error) {
-        console.error('Failed to update user role:', error);
-        res.status(500).send({ error: 'Failed to update user role' });
-    }
-});
-
-
-
-app.get('/users', async (req, res) => {
-  try {
-    const users = await usersCollection.find().toArray();
-    res.send(users);
-  } catch (error) {
-    console.error('Failed to fetch users:', error);
-    res.status(500).send({ error: 'Failed to fetch users' });
-  }
-});
-   
 
         const updateUserRole = async (req, res) => {
             const { id } = req.params;
             const { role } = req.body;
-
 
             const validRoles = ['admin', 'member', 'user'];
             if (!validRoles.includes(role)) {
@@ -166,8 +153,6 @@ app.get('/users', async (req, res) => {
             }
         };
 
-
-        
         module.exports = {
             updateUserRole,
         };
@@ -186,14 +171,11 @@ app.get('/users', async (req, res) => {
             }
         });
 
-
-
         app.get('/bookings/confirmed', async (req, res) => {
             try {
                 const page = parseInt(req.query.page) || 1;
                 const limit = parseInt(req.query.limit) || 10;
                 const skip = (page - 1) * limit;
-
 
                 const query = { status: { $in: ['confirmed', 'approved'] } };
 
@@ -211,8 +193,6 @@ app.get('/users', async (req, res) => {
                 res.status(500).send({ error: 'Failed to fetch confirmed bookings' });
             }
         });
-
-
 
         app.post('/bookings', async (req, res) => {
             try {
@@ -267,10 +247,6 @@ app.get('/users', async (req, res) => {
         });
 
 
-
-
-        // ======= USERS ROUTES =======
-
         app.post('/users', async (req, res) => {
             try {
                 const user = req.body;
@@ -304,7 +280,6 @@ app.get('/users', async (req, res) => {
                 res.status(500).send({ error: 'Failed to fetch members' });
             }
         });
-
 
 
         app.get('/courts', async (req, res) => {
@@ -360,8 +335,6 @@ app.get('/users', async (req, res) => {
             }
         });
 
-
-
         app.get('/coupons', async (req, res) => {
             try {
                 const coupons = await couponsCollection.find().toArray();
@@ -400,8 +373,6 @@ app.get('/users', async (req, res) => {
                 res.status(500).send({ error: 'Failed to delete coupon' });
             }
         });
-
-
 
         app.get('/announcements', async (req, res) => {
             try {
@@ -442,18 +413,18 @@ app.get('/users', async (req, res) => {
             }
         });
 
-        console.log("✅ MongoDB Connected & All Routes Ready!");
+        console.log(" MongoDB Connected & All Routes Ready!");
 
     } catch (error) {
-        console.error("❌ Server error:", error);
+        console.error(" Server error:", error);
     }
 }
 run();
 
 app.get('/', (req, res) => {
-    res.send('🏀 Sports Booking Server is Running');
+    res.send(' Sports Booking Server is Running');
 });
 
 app.listen(port, () => {
-    console.log(`🚀 Server running at http://localhost:${port}`);
+    console.log(` Server running at http://localhost:${port}`);
 });
