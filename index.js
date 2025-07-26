@@ -83,3 +83,18 @@ app.get('/members', async (req, res) => {
         });
 
        
+
+        // Get user role by email (Protected route)
+        app.get('/users/role/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            try {
+                const user = await usersCollection.findOne({ email });
+                res.send({ role: user?.role || 'user' });
+            } catch {
+                res.status(500).send({ error: "Error fetching role" });
+            }
+        });
+
+        // controllers/userController.js
+
+
