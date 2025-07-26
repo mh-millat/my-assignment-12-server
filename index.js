@@ -61,3 +61,25 @@ async function run() {
         const membersCollection = client.db('sportsClubDB').collection('members');
 
 // GET all members
+app.get('/members', async (req, res) => {
+  try {
+    const members = await membersCollection.find().toArray();
+    res.send(members);
+  } catch (error) {
+    console.error('Error fetching members:', error);
+    res.status(500).send({ error: 'Failed to load members' });
+  }
+});
+
+
+
+        app.post('/jwt', (req, res) => {
+            const user = req.body; // e.g. { email: 'abc@example.com' }
+            if (!process.env.JWT_SECRET) {
+                return res.status(500).send({ error: "JWT_SECRET not configured" });
+            }
+            const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '2h' });
+            res.send({ token });
+        });
+
+       
