@@ -21,10 +21,12 @@ const port = process.env.PORT || 5000;
 //     credentials: true
 // }));
 // app.use(express.json());
+
 app.use(cors({
     origin: [
         'http://localhost:5173',
-        'https://keen-sopapillas-ac9c97.netlify.app'
+        'https://keen-sopapillas-ac9c97.netlify.app',
+        'https://verdant-heliotrope-b7e8e3.netlify.app'
     ],
     credentials: true
 }));
