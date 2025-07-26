@@ -74,7 +74,7 @@ app.get('/members', async (req, res) => {
 
 
         app.post('/jwt', (req, res) => {
-            const user = req.body; // e.g. { email: 'abc@example.com' }
+            const user = req.body;
             if (!process.env.JWT_SECRET) {
                 return res.status(500).send({ error: "JWT_SECRET not configured" });
             }
@@ -82,9 +82,7 @@ app.get('/members', async (req, res) => {
             res.send({ token });
         });
 
-       
 
-        // Get user role by email (Protected route)
         app.get('/users/role/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             try {
@@ -95,18 +93,18 @@ app.get('/members', async (req, res) => {
             }
         });
 
-        // controllers/userController.js
 
 
 
 
-// PATCH: Update user role by ID
+
+
 app.patch('/users/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
 
-        // Optional: Validate role
+
         const validRoles = ['admin', 'member', 'user'];
         if (!validRoles.includes(role)) {
             return res.status(400).send({ error: 'Invalid role value' });
@@ -129,7 +127,7 @@ app.patch('/users/:id', async (req, res) => {
 });
 
 
-// GET: Get all users
+
 app.get('/users', async (req, res) => {
   try {
     const users = await usersCollection.find().toArray();
@@ -139,31 +137,13 @@ app.get('/users', async (req, res) => {
     res.status(500).send({ error: 'Failed to fetch users' });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-       
+   
 
         const updateUserRole = async (req, res) => {
             const { id } = req.params;
             const { role } = req.body;
 
-            // Optional: Validate role
+
             const validRoles = ['admin', 'member', 'user'];
             if (!validRoles.includes(role)) {
                 return res.status(400).json({ message: 'Invalid role' });
@@ -193,25 +173,6 @@ app.get('/users', async (req, res) => {
         };
 
 
-
-
-
-
-
-
-
-
-        // ======= BOOKINGS ROUTES =======
-
-        // app.get('/bookings', async (req, res) => {
-        //     try {
-        //         const bookings = await bookingsCollection.find().toArray();
-        //         res.send(bookings);
-        //     } catch (error) {
-        //         res.status(500).send({ error: 'Failed to fetch bookings' });
-        //     }
-        // });
-
         app.get('/bookings', async (req, res) => {
             try {
                 const { status } = req.query;
@@ -226,22 +187,6 @@ app.get('/users', async (req, res) => {
         });
 
 
-        // app.get('/bookings/confirmed', async (req, res) => {
-        //     try {
-        //         const page = parseInt(req.query.page) || 1;
-        //         const limit = parseInt(req.query.limit) || 10;
-        //         const skip = (page - 1) * limit;
-
-        //         const query = { status: 'confirmed' };
-        //         const total = await bookingsCollection.countDocuments(query);
-        //         const bookings = await bookingsCollection.find(query).skip(skip).limit(limit).toArray();
-        //         const totalPages = Math.ceil(total / limit);
-
-        //         res.send({ bookings, totalPages });
-        //     } catch (error) {
-        //         res.status(500).send({ error: 'Failed to fetch confirmed bookings' });
-        //     }
-        // });
 
         app.get('/bookings/confirmed', async (req, res) => {
             try {
@@ -249,7 +194,7 @@ app.get('/users', async (req, res) => {
                 const limit = parseInt(req.query.limit) || 10;
                 const skip = (page - 1) * limit;
 
-                // ✅ এখানে পরিবর্তনটা হল
+
                 const query = { status: { $in: ['confirmed', 'approved'] } };
 
                 const total = await bookingsCollection.countDocuments(query);
