@@ -4,6 +4,11 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+if (!process.env.DB_USER || !process.env.DB_PASS || !process.env.JWT_SECRET) {
+    console.error("❌ Missing required environment variables (.env)");
+    process.exit(1);
+}
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -22,8 +27,6 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
-
-
 
 // Collections
 let bookingsCollection;
@@ -45,7 +48,6 @@ function verifyToken(req, res, next) {
     });
 }
 
-
 async function run() {
     try {
         await client.connect();
@@ -56,27 +58,15 @@ async function run() {
         couponsCollection = db.collection("coupons");
         announcementsCollection = db.collection("announcements");
         courtsCollection = db.collection("courts");
-        const membersCollection = client.db('sportsClubDB').collection('members');
 
-        app.get('/members', async (req, res) => {
-            try {
-                const members = await membersCollection.find().toArray();
-                res.send(members);
-            } catch (error) {
-                console.error('Error fetching members:', error);
-                res.status(500).send({ error: 'Failed to load members' });
-            }
-        });
-
+        // JWT
         app.post('/jwt', (req, res) => {
             const user = req.body;
-            if (!process.env.JWT_SECRET) {
-                return res.status(500).send({ error: "JWT_SECRET not configured" });
-            }
             const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '2h' });
             res.send({ token });
         });
 
+        // User Role
         app.get('/users/role/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             try {
@@ -88,76 +78,108 @@ async function run() {
         });
 
         app.patch('/users/:id', async (req, res) => {
-            try {
-                const { id } = req.params;
-                const { role } = req.body;
+            const { id } = req.params;
+            const { role } = req.body;
+            const validRoles = ['admin', 'member', 'user'];
+            if (!validRoles.includes(role)) return res.status(400).send({ error: 'Invalid role value' });
 
+            const result = await usersCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { role } }
+            );
 
-                const validRoles = ['admin', 'member', 'user'];
-                if (!validRoles.includes(role)) {
-                    return res.status(400).send({ error: 'Invalid role value' });
-                }
-
-                const result = await usersCollection.updateOne(
-                    { _id: new ObjectId(id) },
-                    { $set: { role } }
-                );
-
-                if (result.modifiedCount === 0) {
-                    return res.status(404).send({ error: 'User not found or role not changed' });
-                }
-
-                res.send({ message: `Role updated to ${role}` });
-            } catch (error) {
-                console.error('Failed to update user role:', error);
-                res.status(500).send({ error: 'Failed to update user role' });
-            }
+            if (result.modifiedCount === 0) return res.status(404).send({ error: 'User not found or role not changed' });
+            res.send({ message: `Role updated to ${role}` });
         });
-
-
 
         app.get('/users', async (req, res) => {
             try {
                 const users = await usersCollection.find().toArray();
                 res.send(users);
             } catch (error) {
-                console.error('Failed to fetch users:', error);
                 res.status(500).send({ error: 'Failed to fetch users' });
             }
         });
 
-
-        const updateUserRole = async (req, res) => {
-            const { id } = req.params;
-            const { role } = req.body;
-
-            const validRoles = ['admin', 'member', 'user'];
-            if (!validRoles.includes(role)) {
-                return res.status(400).json({ message: 'Invalid role' });
-            }
-
+        app.post('/users', async (req, res) => {
             try {
-                const updatedUser = await User.findByIdAndUpdate(
-                    id,
-                    { role },
-                    { new: true }
-                );
+                const user = req.body;
+                const existingUser = await usersCollection.findOne({ email: user.email });
+                if (existingUser) return res.status(400).send({ message: 'User already exists' });
 
-                if (!updatedUser) {
-                    return res.status(404).json({ message: 'User not found' });
-                }
-
-                res.json({ message: `Role updated to ${role}`, user: updatedUser });
+                user.role = user.role || 'user';
+                const result = await usersCollection.insertOne(user);
+                res.send(result);
             } catch (error) {
-                res.status(500).json({ message: 'Server error', error });
+                res.status(500).send({ error: 'Failed to add user' });
             }
-        };
+        });
 
-        module.exports = {
-            updateUserRole,
-        };
+        // Members = users with role "member"
+        app.get('/members', async (req, res) => {
+            try {
+                const members = await usersCollection.find({ role: 'member' }).toArray();
+                res.send(members);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch members' });
+            }
+        });
 
+        // Courts
+        app.get('/courts', async (req, res) => {
+            try {
+                const courts = await courtsCollection.find().toArray();
+                res.send(courts);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch courts' });
+            }
+        });
 
+        app.post('/courts', verifyToken, async (req, res) => {
+            try {
+                const court = req.body;
+                if (!court.name || !court.type || court.price == null) {
+                    return res.status(400).send({ error: 'Missing required fields' });
+                }
+                const result = await courtsCollection.insertOne(court);
+                res.send({ insertedId: result.insertedId });
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to add court' });
+            }
+        });
+
+        app.patch('/courts/:id', verifyToken, async (req, res) => {
+            try {
+                const id = req.params.id;
+                if (!ObjectId.isValid(id)) return res.status(400).send({ error: 'Invalid ID' });
+
+                const result = await courtsCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: req.body }
+                );
+                if (result.matchedCount === 0) return res.status(404).send({ error: 'Court not found' });
+
+                res.send({ modifiedCount: result.modifiedCount });
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to update court' });
+            }
+        });
+
+        app.delete('/courts/:id', verifyToken, async (req, res) => {
+            try {
+                const id = req.params.id;
+                if (!ObjectId.isValid(id)) return res.status(400).send({ error: 'Invalid ID' });
+
+                const result = await courtsCollection.deleteOne({ _id: new ObjectId(id) });
+                if (result.deletedCount === 0) return res.status(404).send({ error: 'Court not found' });
+
+                res.send({ deletedCount: result.deletedCount });
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to delete court' });
+            }
+        });
+
+        // Bookings
         app.get('/bookings', async (req, res) => {
             try {
                 const { status } = req.query;
@@ -180,12 +202,7 @@ async function run() {
                 const query = { status: { $in: ['confirmed', 'approved'] } };
 
                 const total = await bookingsCollection.countDocuments(query);
-                const bookings = await bookingsCollection
-                    .find(query)
-                    .skip(skip)
-                    .limit(limit)
-                    .toArray();
-
+                const bookings = await bookingsCollection.find(query).skip(skip).limit(limit).toArray();
                 const totalPages = Math.ceil(total / limit);
 
                 res.send({ bookings, totalPages });
@@ -194,7 +211,7 @@ async function run() {
             }
         });
 
-        app.post('/bookings', async (req, res) => {
+        app.post('/bookings', verifyToken, async (req, res) => {
             try {
                 const booking = req.body;
                 booking.status = 'pending';
@@ -205,7 +222,7 @@ async function run() {
             }
         });
 
-        app.patch('/bookings/:id/status', async (req, res) => {
+        app.patch('/bookings/:id/status', verifyToken, async (req, res) => {
             try {
                 const id = req.params.id;
                 const { status } = req.body;
@@ -222,7 +239,7 @@ async function run() {
             }
         });
 
-        app.delete('/bookings/:id', async (req, res) => {
+        app.delete('/bookings/:id', verifyToken, async (req, res) => {
             try {
                 const result = await bookingsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
                 res.send(result);
@@ -231,110 +248,21 @@ async function run() {
             }
         });
 
-
         app.patch('/bookings/approve/:id', async (req, res) => {
+            const id = req.params.id;
             try {
-                const id = req.params.id;
                 const result = await bookingsCollection.updateOne(
                     { _id: new ObjectId(id) },
                     { $set: { status: 'approved' } }
                 );
-
                 res.send(result);
-            } catch (error) {
-                res.status(500).send({ error: 'Failed to approve booking' });
+            } catch (err) {
+                console.error(err);
+                res.status(500).send({ error: "Failed to approve booking" });
             }
         });
 
-
-        app.post('/users', async (req, res) => {
-            try {
-                const user = req.body;
-                const existingUser = await usersCollection.findOne({ email: user.email });
-                if (existingUser) return res.status(400).send({ message: 'User already exists' });
-
-                user.role = user.role || 'user';
-                const result = await usersCollection.insertOne(user);
-                res.send(result);
-            } catch (error) {
-                res.status(500).send({ error: 'Failed to add user' });
-            }
-        });
-
-        app.get('/users', async (req, res) => {
-            try {
-                const users = await usersCollection.find().toArray();
-                res.send(users);
-            } catch (error) {
-                res.status(500).send({ error: 'Failed to fetch users' });
-            }
-        });
-
-
-
-        app.get('/members', async (req, res) => {
-            try {
-                const members = await usersCollection.find().toArray();
-                res.send(members);
-            } catch (error) {
-                res.status(500).send({ error: 'Failed to fetch members' });
-            }
-        });
-
-
-        app.get('/courts', async (req, res) => {
-            try {
-                const courts = await courtsCollection.find().toArray();
-                res.send(courts);
-            } catch (error) {
-                res.status(500).send({ error: 'Failed to fetch courts' });
-            }
-        });
-
-        app.post('/courts', async (req, res) => {
-            try {
-                const court = req.body;
-                if (!court.name || !court.type || court.price == null) {
-                    return res.status(400).send({ error: 'Missing required fields' });
-                }
-                const result = await courtsCollection.insertOne(court);
-                res.send({ insertedId: result.insertedId });
-            } catch (error) {
-                res.status(500).send({ error: 'Failed to add court' });
-            }
-        });
-
-        app.patch('/courts/:id', async (req, res) => {
-            try {
-                const id = req.params.id;
-                if (!ObjectId.isValid(id)) return res.status(400).send({ error: 'Invalid ID' });
-
-                const result = await courtsCollection.updateOne(
-                    { _id: new ObjectId(id) },
-                    { $set: req.body }
-                );
-                if (result.matchedCount === 0) return res.status(404).send({ error: 'Court not found' });
-
-                res.send({ modifiedCount: result.modifiedCount });
-            } catch (error) {
-                res.status(500).send({ error: 'Failed to update court' });
-            }
-        });
-
-        app.delete('/courts/:id', async (req, res) => {
-            try {
-                const id = req.params.id;
-                if (!ObjectId.isValid(id)) return res.status(400).send({ error: 'Invalid ID' });
-
-                const result = await courtsCollection.deleteOne({ _id: new ObjectId(id) });
-                if (result.deletedCount === 0) return res.status(404).send({ error: 'Court not found' });
-
-                res.send({ deletedCount: result.deletedCount });
-            } catch (error) {
-                res.status(500).send({ error: 'Failed to delete court' });
-            }
-        });
-
+   // Coupons
         app.get('/coupons', async (req, res) => {
             try {
                 const coupons = await couponsCollection.find().toArray();
@@ -344,7 +272,7 @@ async function run() {
             }
         });
 
-        app.post('/coupons', async (req, res) => {
+        app.post('/coupons', verifyToken, async (req, res) => {
             try {
                 const result = await couponsCollection.insertOne(req.body);
                 res.send(result);
@@ -353,7 +281,7 @@ async function run() {
             }
         });
 
-        app.patch('/coupons/:id', async (req, res) => {
+        app.patch('/coupons/:id', verifyToken, async (req, res) => {
             try {
                 const result = await couponsCollection.updateOne(
                     { _id: new ObjectId(req.params.id) },
@@ -365,7 +293,7 @@ async function run() {
             }
         });
 
-        app.delete('/coupons/:id', async (req, res) => {
+        app.delete('/coupons/:id', verifyToken, async (req, res) => {
             try {
                 const result = await couponsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
                 res.send(result);
@@ -374,6 +302,7 @@ async function run() {
             }
         });
 
+        // Announcements
         app.get('/announcements', async (req, res) => {
             try {
                 const announcements = await announcementsCollection.find().toArray();
@@ -383,7 +312,7 @@ async function run() {
             }
         });
 
-        app.post('/announcements', async (req, res) => {
+        app.post('/announcements', verifyToken, async (req, res) => {
             try {
                 const result = await announcementsCollection.insertOne(req.body);
                 res.send(result);
@@ -392,7 +321,7 @@ async function run() {
             }
         });
 
-        app.patch('/announcements/:id', async (req, res) => {
+        app.patch('/announcements/:id', verifyToken, async (req, res) => {
             try {
                 const result = await announcementsCollection.updateOne(
                     { _id: new ObjectId(req.params.id) },
@@ -404,7 +333,7 @@ async function run() {
             }
         });
 
-        app.delete('/announcements/:id', async (req, res) => {
+        app.delete('/announcements/:id', verifyToken, async (req, res) => {
             try {
                 const result = await announcementsCollection.deleteOne({ _id: new ObjectId(req.params.id) });
                 res.send(result);
@@ -422,9 +351,9 @@ async function run() {
 run();
 
 app.get('/', (req, res) => {
-    res.send(' Sports Booking Server is Running');
+    res.send('🚀 Sports Booking Server is Running');
 });
 
 app.listen(port, () => {
-    console.log(` Server running at http://localhost:${port}`);
+    console.log(`🚀 Server running at http://localhost:${port}`);
 });
