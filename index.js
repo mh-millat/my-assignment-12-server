@@ -267,3 +267,31 @@ app.get('/users', async (req, res) => {
             }
         });
 
+        // app.get('/bookings', async (req, res) => {
+        //     try {
+        //         const { status } = req.query;
+
+        //         let query = {};
+        //         if (status) {
+        //             query.status = status;
+        //         }
+
+        //         const bookings = await bookingsCollection.find(query).toArray();
+        //         res.send(bookings);
+        //     } catch (error) {
+        //         res.status(500).send({ error: 'Failed to fetch bookings' });
+        //     }
+        // });
+
+
+        app.post('/bookings', async (req, res) => {
+            try {
+                const booking = req.body;
+                booking.status = 'pending';
+                const result = await bookingsCollection.insertOne(booking);
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to add booking' });
+            }
+        });
+
