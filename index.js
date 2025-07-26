@@ -24,3 +24,25 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+
+
+
+// Collections
+let bookingsCollection;
+let usersCollection;
+let couponsCollection;
+let announcementsCollection;
+let courtsCollection;
+
+// JWT Middleware
+function verifyToken(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).send({ error: 'Unauthorized access' });
+
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) return res.status(403).send({ error: 'Forbidden access' });
+        req.user = decoded;
+        next();
+    });
+}
