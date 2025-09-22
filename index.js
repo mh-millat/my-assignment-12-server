@@ -26,7 +26,8 @@ app.use(cors({
     origin: [
         'http://localhost:5173',
         'https://keen-sopapillas-ac9c97.netlify.app',
-        'https://verdant-heliotrope-b7e8e3.netlify.app'
+        'https://verdant-heliotrope-b7e8e3.netlify.app',
+        'https://cheerful-duckanoo-b871d8.netlify.app'
     ],
     credentials: true
 }));
@@ -86,6 +87,12 @@ async function run() {
             const email = req.params.email;
             try {
                 const user = await usersCollection.findOne({ email });
+                // console.log(user)
+
+
+
+
+
                 res.send({ role: user?.role || 'user' });
             } catch {
                 res.status(500).send({ error: "Error fetching role" });
