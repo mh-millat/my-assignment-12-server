@@ -12,22 +12,14 @@ if (!process.env.DB_USER || !process.env.DB_PASS || !process.env.JWT_SECRET) {
 const app = express();
 const port = process.env.PORT || 5000;
 
-// app.use(cors({
-//     origin: [
-//         'http://localhost:5173',
-//         "https://my-assignment-12-server-kappa.vercel.app"
-
-//     ],
-//     credentials: true
-// }));
-// app.use(express.json());
 
 app.use(cors({
     origin: [
         'http://localhost:5173',
         'https://keen-sopapillas-ac9c97.netlify.app',
         'https://verdant-heliotrope-b7e8e3.netlify.app',
-        'https://cheerful-duckanoo-b871d8.netlify.app'
+        'https://cheerful-duckanoo-b871d8.netlify.app',
+        'https://mellow-queijadas-54fe00.netlify.app'
     ],
     credentials: true
 }));
@@ -342,6 +334,7 @@ async function run() {
                 res.status(500).send({ error: 'Failed to add announcement' });
             }
         });
+
 
         app.patch('/announcements/:id', verifyToken, async (req, res) => {
             try {
