@@ -14,13 +14,15 @@ const port = process.env.PORT || 5000;
 
 
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'https://keen-sopapillas-ac9c97.netlify.app',
-        'https://verdant-heliotrope-b7e8e3.netlify.app',
-        'https://cheerful-duckanoo-b871d8.netlify.app',
-        'https://mellow-queijadas-54fe00.netlify.app'
-    ],
+    // origin: [
+    //     'http://localhost:5173',
+    //     'https://keen-sopapillas-ac9c97.netlify.app',
+    //     'https://verdant-heliotrope-b7e8e3.netlify.app',
+    //     'https://joyful-pie-c5db5a.netlify.app',
+    //     'https://dashing-heliotrope-83dad3.netlify.app'
+    // ],
+
+    origin: ['http://localhost:5173', 'https://dashing-heliotrope-83dad3.netlify.app'],
     credentials: true
 }));
 app.use(express.json());
